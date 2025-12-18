@@ -27,5 +27,5 @@ Architecture
 ========
 RestComm SIP Servlets implements the latest SIP Servlet v1.1 (JSR 289) standard. It can be plugged into any Application Server container and also offers High Availability and Fail-over on its corresponding product from [PaiCore Tech](https://paicore.tech) 
 
-![](https://raw.githubusercontent.com/wiki/RestComm/sip-servlets/images/RestComm-SIP-Servlets-Stack.png)
+
 
