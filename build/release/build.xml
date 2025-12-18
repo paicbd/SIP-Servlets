@@ -1,0 +1,456 @@
+<?xml version="1.0"?>
+<project name="restcomm.sipservlets.release" default="release" basedir=".">
+	<property environment="sys"/>
+	<property name="release.path" location="${ant.file.restcomm.sipservlets.release}/../target"/>
+	<property name="base.path" location="${ant.file.restcomm.sipservlets.release}/.."/>
+	<property name="docs.stage.dir" location="${ant.file.restcomm.sipservlets.release}/../documentation"/>
+	<property name="mss.release.configurations" value="all,default"/>
+	<property name="mss.release.configurations.wildfly" value="all,default"/>
+	<property name="wildfly.version" value="24.0.0.Final"/>
+	<property name="wildfly.download.url"
+			  value="https://download.jboss.org/wildfly/24.0.0.Final/wildfly-24.0.0.Final.zip"/>
+	<property name="wildfly.distro.zip.path" value="${base.path}/wildfly-${wildfly.version}.zip"/>
+	<property name="wildfly.home" value="${release.path}/wildfly-${wildfly.version}"/>
+	<property name="wildfly.home.temp" value="${release.path}/temp"/>
+	<property name="wildfly.management.war" value="admin-console.war"/>
+	<property name="wildfly.management.home" value="${release.path}/${wildfly.management.war}"/>
+	<property name="wildfly.management.home.contents" value="${release.path}/embedded-jopr.war-contents"/>
+	<property name="mms.version" value="3.0.0.FINAL"/>
+	<property name="mms.download.url"
+			  value="https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/mediaserver/${mms.version}.zip"/>
+	<property name="mms.zip.path" value="${base.path}/mobicents-media-server.zip"/>
+	<property name="embjopr.version" value="1.2.0.CR-JBAS4"/>
+	<property name="embjopr.download.url"
+			  value="http://downloads.sourceforge.net/project/rhq/embedded-jopr/embedded-jopr-1.2.0.CR/embedded-jopr-${embjopr.version}.zip"/>
+	<property name="diameter.version" value="1.2.1.GA"/>
+	<property name="diameter.download.url"
+			  value="http://repository.jboss.org/nexus/content/groups/public/org/mobicents/servers/diameter/mobicents-diameter-mux-sar-jboss-4/${diameter.version}/mobicents-diameter-mux-sar-jboss-4-${diameter.version}.sar"/>
+	<property name="diameter-wildfly.version" value="1.3.3.FINAL"/>
+	<property name="diameter-wildfly.name" value="mobicents-diameter-mux-sar-wildfly-${diameter-wildfly.version}.sar"/>
+	<property name="diameter-wildfly.download.url"
+			  value="http://repository.jboss.org/nexus/content/groups/public/org/mobicents/servers/diameter/mobicents-diameter-mux-sar-wildfly/${diameter-wildfly.version}/${diameter-wildfly.name}"/>
+	<property name="diameter.distro.path" value="${base.path}/mobicents-diameter-wildfly-${diameter.version}.sar"/>
+	<property name="diameter-wildfly.distro.path"
+			  value="${base.path}/mobicents-diameter-wildfly-${diameter-wildfly.version}.sar"/>
+	<property name="wildfly.distro.zip.path" value="${base.path}/wildfly-${wildfly.version}.zip"/>
+	<property name="wildfly.management.war" value="admin-console.war"/>
+	<property name="wildfly.management.home" value="${release.path}/${wildfly.management.war}"/>
+
+	<condition property="mvn.executable" value="${sys.M2_HOME}\bin\mvn.bat" else="mvn">
+		<os family="windows"/>
+	</condition>
+
+	<taskdef onerror="fail" resource="net/sf/antcontrib/antlib.xml">
+		<classpath>
+			<pathelement location="${ant.file.restcomm.release}/../ant-contrib-1.0b3.jar"/>
+		</classpath>
+	</taskdef>
+
+	<target name="download-wildfly">
+		<available file="${wildfly.distro.zip.path}" property="wildfly.downloaded"/>
+		<get src="${wildfly.download.url}" dest="${wildfly.distro.zip.path}" skipExisting="true"/>
+	</target>
+
+	<target name="release" depends="clean, build-documentation, release-wildfly, make-src-zip"/>
+
+	<target name="release-wildfly"
+			depends="extract-wildfly, build-modules, copy-modules, create-config-directories, get-mms, extract-mms, get-sasl, get-mysql-driver">
+		<copy file="TOMCAT-SIP-SERVLETS-README.txt" todir="${wildfly.home}"/>
+
+		<mkdir dir="${wildfly.home}/conf/dars"/>
+		<copy file="${base.path}/../../sip-servlets-examples/websocket-b2bua/websocket-dar.properties"
+			  tofile="${wildfly.home}/conf/dars/mobicents-dar.properties"/>
+
+		<copy file="${base.path}/mss-sip-stack.properties" tofile="${wildfly.home}/conf/mss-sip-stack.properties"/>
+		<exec failonerror="true" executable="${mvn.executable}" dir="${base.path}/../..">
+			<arg line="clean buildnumber:create install -P set-git-hash -DCATALINA_HOME=${wildfly.home} -P wildfly-24"/>
+		</exec>
+		<exec failonerror="true" executable="${mvn.executable}"
+			  dir="${base.path}/../../sip-servlets-examples/click-to-call-servlet3">
+			<arg line="clean install -P set-git-hash"/>
+		</exec>
+		<copy tofile="${wildfly.home}/webapps/Click2CallAsync.war">
+			<fileset dir="${base.path}/../../sip-servlets-examples/click-to-call-servlet3/target/"
+					 includes="Click2CallAsync.war"/>
+		</copy>
+		<exec failonerror="true" executable="${mvn.executable}"
+			  dir="${base.path}/../../sip-servlets-examples/websocket-b2bua">
+			<arg line="clean install -P set-git-hash"/>
+		</exec>
+		<copy tofile="${wildfly.home}/webapps/websockets-sip-servlet.war">
+			<fileset dir="${base.path}/../../sip-servlets-examples/websocket-b2bua/target/"
+					 includes="websockets-sip-servlet-*.war"/>
+		</copy>
+		<antcall target="deploy-mgmnt">
+			<param name="management.deploy.folder" value="${wildfly.home}/webapps"/>
+		</antcall>
+		<mkdir dir="${wildfly.home}/docs"/>
+		<antcall target="copy-documentation">
+			<param name="mss.home" value="${wildfly.home}"/>
+		</antcall>
+		<antcall target="make-final-zip-wildfly"/>
+	</target>
+
+	<target name="build-modules">
+		<copy todir="target/wildfly-24.0.0.Final/modules/system/layers/base/org/mobicents">
+			<fileset
+					dir="../../containers/sip-servlets-as10-drop-in/build-restcomm-modules/target/wildfly-10.0.0.Final/modules/system/layers/base/org/mobicents"/>
+		</copy>
+
+		<exec executable="mvn">
+			<arg value="clean"/>
+			<arg value="install"/>
+			<arg value="war:inplace"/>
+			<arg value="-f"/>
+			<arg value="../../sip-servlets-examples/click-to-call/pom.xml"/>
+		</exec>
+
+		<exec executable="mvn">
+			<arg value="clean"/>
+			<arg value="install"/>
+			<arg value="war:inplace"/>
+			<arg value="-f"/>
+			<arg value="../../sip-servlets-examples/websocket-b2bua/pom.xml"/>
+		</exec>
+
+		<exec executable="mvn">
+			<arg value="clean"/>
+			<arg value="install"/>
+			<arg value="war:inplace"/>
+			<arg value="-f"/>
+			<arg value="../../sip-servlets-examples/media-jsr309-servlet/pom.xml"/>
+		</exec>
+
+		<exec executable="mvn">
+			<arg value="clean"/>
+			<arg value="install"/>
+			<arg value="war:inplace"/>
+			<arg value="-f"/>
+			<arg value="../../management/sip-servlets-management/pom.xml"/>
+		</exec>
+
+	</target>
+
+	<target name="copy-modules" depends="build-modules">
+		<copy todir="target/wildfly-24.0.0.Final/standalone/deployments" includeemptydirs="false">
+			<fileset dir="../../sip-servlets-examples/websocket-b2bua/target">
+				<include name="**/*.war"/>
+			</fileset>
+			<mapper type="glob" from="*" to="websockets-sip-servlet.war"/>
+		</copy>
+
+		<copy todir="target/wildfly-24.0.0.Final/standalone/deployments" includeemptydirs="false">
+			<fileset dir="../../sip-servlets-examples/media-jsr309-servlet/target">
+				<include name="**/*.war"/>
+			</fileset>
+			<mapper type="glob" from="*" to="media-jsr309-servlet.war"/>
+		</copy>
+
+		<copy todir="target/wildfly-24.0.0.Final/standalone/deployments" includeemptydirs="false">
+			<fileset dir="../../management/sip-servlets-management/target">
+				<include name="**/*.war"/>
+			</fileset>
+			<mapper type="glob" from="*" to="sip-servlets-management.war"/>
+		</copy>
+	</target>
+
+	<target name="create-config-directories" depends="copy-modules">
+		<mkdir dir="target/wildfly-24.0.0.Final/standalone/configuration/dars"/>
+		<mkdir dir="target/wildfly-24.0.0.Final/domain/configuration/dars"/>
+
+		<copy
+				file="../../sip-servlets-examples/websocket-b2bua/websocket-dar.properties"
+				tofile="target/wildfly-24.0.0.Final/standalone/configuration/dars/mobicents-dar.properties"
+				verbose="true"
+				overwrite="true"/>
+
+		<copy
+				file="../../sip-servlets-examples/websocket-b2bua/websocket-dar.properties"
+				tofile="target/wildfly-24.0.0.Final/domain/configuration/dars/mobicents-dar.properties"
+				verbose="true"
+				overwrite="true"/>
+
+		<copy
+				file="mss-sip-stack.properties"
+				tofile="target/wildfly-24.0.0.Final/standalone/configuration/mss-sip-stack.properties"
+				verbose="true"
+				overwrite="true"/>
+
+		<copy
+				file="mss-sip-stack.properties"
+				tofile="target/wildfly-24.0.0.Final/domain/configuration/mss-sip-stack.properties"
+				verbose="true"
+				overwrite="true"/>
+
+		<copy
+				file="wildfly-10-standalone-conf"
+				tofile="target/wildfly-24.0.0.Final/bin/standalone.conf"
+				verbose="true"
+				overwrite="true"/>
+
+		<copy
+				file="../../containers/sip-servlets-as10-drop-in/jboss-as-restcomm/standalone-sip.xml"
+				tofile="target/wildfly-24.0.0.Final/standalone/configuration/standalone-sip.xml"
+				verbose="true"
+				overwrite="true"/>
+
+	</target>
+
+
+	<target name="deploy-mgmnt">
+		<property name="management.home" location="${base.path}/../../management/sip-servlets-management/"/>
+		<exec failonerror="true" executable="${mvn.executable}" dir="${management.home}">
+			<arg line="clean install -P set-git-hash"/>
+		</exec>
+		<copy file="${management.home}/target/sip-servlets-management.war"
+			  tofile="${management.deploy.folder}/sip-servlets-management.war"/>
+		<exec executable="wget" dir="${management.deploy.folder}">
+			<arg value="-O"/>
+			<arg value="jolokia.war"/>
+			<arg value="https://repo1.maven.org/maven2/org/jolokia/jolokia-it-war/1.1.0/jolokia-it-war-1.1.0.war"/>
+		</exec>
+
+		<copy
+				file="${management.deploy.folder}/jolokia.war"
+				tofile="${wildfly.home}/standalone/deployments/jolokia.war"
+				verbose="true"
+				overwrite="true"/>
+	</target>
+
+	<target name="deploy-mss-jopr-plugin-5">
+		<echo message="MSS_HOME=${mss.home}"/>
+		<move verbose="true" failonerror="false"
+			  file="${mss.home}/server/${jboss.config}/deploy/admin-console.war/plugins/jopr-jboss-as-5-plugin-2.3.0.EmbJopr.1.2.0-1.jar"
+			  tofile="${mss.home}/server/${jboss.config}/deploy/admin-console.war/plugins/jopr-jboss-as-5-plugin-2.3.0.EmbJopr.1.2.0-1.jar.bak"/>
+		<get dest="${mss.home}/server/${jboss.config}/deploy/admin-console.war/plugins/jopr-mobicents-sip-servlets-as-5-plugin-${mss.jopr-plugin-5.version}.jar"
+			 src="${mss.jopr-plugin-5.url}"/>
+		<get dest="${mss.home}/server/${jboss.config}/deploy/admin-console.war/plugins/rhq-jmx-plugin-1.2.0.GA.jar"
+			 src="${jopr-jmx-plugin-5.url}"/>
+	</target>
+
+	<condition property="dependencies.checkedout">
+		<and>
+			<available file="${base.path}/target/dependencies/media/1.x/core/.svn/entries"/>
+			<available file="${base.path}/target/dependencies/media/2.x/core/.svn/entries"/>
+			<available file="${base.path}/target/dependencies/diameter/.svn/entries"/>
+			<available file="${base.path}/target/dependencies/sip-balancer/.svn/entries"/>
+		</and>
+	</condition>
+
+	<target name="get-deps" depends="checkout-deps,update-deps"/>
+
+	<target name="checkout-deps" unless="dependencies.checkedout">
+		<echo>Checking out dependencies</echo>
+		<exec executable="${mvn.executable}" dir="${base.path}">
+			<arg line="-f external-components.xml validate -P checkout"/>
+		</exec>
+	</target>
+
+	<target name="update-deps">
+		<echo>Updating dependencies</echo>
+		<exec executable="${mvn.executable}" dir="${base.path}">
+			<arg line="-f external-components.xml validate -P update"/>
+		</exec>
+	</target>
+
+	<target name="build-restcomm-sip-load-balancer" depends="get-deps">
+		<echo>Building Restcomm SIP Load Balancer</echo>
+		<exec failonerror="true" executable="${mvn.executable}" dir="${base.path}/target/dependencies/sip-balancer/jar">
+			<arg line="clean install -P set-git-hash -Dmaven.test.skip=true"/>
+		</exec>
+		<exec failonerror="true" executable="${mvn.executable}"
+			  dir="${base.path}/target/dependencies/sip-balancer/docs">
+			<arg line="clean install -P set-git-hash,maven-release,mobicents -Dmaven.test.skip=true"/>
+		</exec>
+		<copy tofile="${mss.home}/sip-balancer/sip-balancer-jar-with-dependencies.jar">
+			<fileset dir="${base.path}/target/dependencies/sip-balancer/jar/target/"
+					 includes="sip-balancer-*-jar-with-dependencies.jar"/>
+		</copy>
+		<mkdir dir="${mss.home}/sip-balancer/docs"/>
+		<copy todir="${mss.home}/sip-balancer/docs">
+			<fileset
+					dir="${base.path}/target/dependencies/sip-balancer/docs/jdocbook-restcomm/target/docbook/publish/en-US"
+					includes="**/*"/>
+		</copy>
+		<copy file="${base.path}/target/dependencies/sip-balancer/jar/src/test/resources/lb-configuration.properties"
+			  tofile="${mss.home}/sip-balancer/lb-configuration.properties"/>
+	</target>
+
+	<target name="build-restcomm-diameter-wildfly" depends="get-restcomm-diameter-wildfly">
+		<unzip dest="${wildfly.home}/server/${wildfly.config}/deploy/${diameter-wildfly.name}"
+			   src="${diameter-wildfly.distro.path}"/>
+		<copy overwrite="true" file="${base.path}/jdiameter-config.xml"
+			  tofile="${wildfly.home}/server/${wildfly.config}/deploy/${diameter-wildfly.name}/config/jdiameter-config.xml"/>
+	</target>
+
+	<available file="${diameter-wildfly.distro.path}" property="got.mobicents-diameter-wildfly"/>
+	<target name="get-restcomm-diameter-wildfly" unless="got.mobicents-diameter-wildfly">
+		<echo>Downloading Mobicents Diameter WildFly</echo>
+		<get dest="${diameter-wildfly.distro.path}" src="${diameter-wildfly.download.url}"/>
+	</target>
+
+	<target name="build-documentation">
+		<echo>Building documentation</echo>
+		<exec failonerror="true" executable="${mvn.executable}" dir="${base.path}/../../docs">
+			<arg line="clean install"/>
+		</exec>
+	</target>
+
+	<target name="copy-documentation">
+		<copy overwrite="true" todir="${mss.home}/docs/restcomm-sip-servlets">
+			<fileset dir="${base.path}/../../docs/sources-asciidoc/target/generated-docs/html-book/"/>
+		</copy>
+
+		<copy overwrite="true" todir="${mss.home}/docs/restcomm-sip-servlets">
+			<fileset dir="${base.path}/../../docs/sources-asciidoc/target/generated-docs/pdf/"/>
+		</copy>
+	</target>
+
+	<target name="set-src-excludes">
+		<defaultexcludes add="**/target/**"/>
+		<defaultexcludes add="**/design-docs/**"/>
+		<defaultexcludes add="**/legacy/**"/>
+		<defaultexcludes add="**/release/**"/>
+		<defaultexcludes add="**/logs/**"/>
+		<defaultexcludes add="**/tests/**"/>
+		<defaultexcludes add="**/build/**"/>
+		<defaultexcludes add="**/GWT/**"/>
+		<defaultexcludes add="**/${*}/**"/>
+		<defaultexcludes add="**/*JBOSS_HOME*/**"/>
+		<defaultexcludes add="**/*CATALINA_HOME*/**"/>
+		<defaultexcludes add="**/.gwt-cache/**"/>
+		<defaultexcludes add="**/.settings/**"/>
+		<defaultexcludes add="**/.project"/>
+		<defaultexcludes add="**/.classpath"/>
+		<defaultexcludes add="**/*.class" echo="true"/>
+	</target>
+
+	<target name="make-src-zip" depends="set-time-stamp,set-src-excludes">
+		<property name="zip.filename" value="restcomm-sip-servlets-${mss.release.version}-src.zip"/>
+
+		<copy todir="${release.path}/src/restcomm/servers/sip-servlets" includeEmptyDirs="false">
+			<fileset dir="${base.path}/../.."
+					 includes="**/pom.xml **/sip-servlets-annotations/** **/docs/** **/sip-servlets-application-router/** **/sip-servlets-bootstrap/** **/containers/** **/sip-servlets-client/** **/sip-servlets-core-api/** **/sip-servlets-examples/** **/sip-servlets-impl/** **/sip-servlets-jruby/** **/management/** **/sip-servlets-spec/**"
+					 excludes="**/mobicents-skin/** **/sip-servlets-bootstrap/src/site/** **/sip-servlets-impl/null/** **/www/**"/>
+		</copy>
+		<zip destfile="${base.path}/${zip.filename}" basedir="${release.path}/src"/>
+		<delete dir="${release.path}/src"/>
+
+		<defaultexcludes default="true"/>
+	</target>
+
+	<target name="make-final-zip-wildfly" depends="set-time-stamp">
+		<fixcrlf srcdir="${wildfly.home}/bin" includes="*.sh" eol="lf" eof="remove"/>
+		<zip destfile="${base.path}/restcomm-sip-servlets-${mss.release.version}-wildfly-${wildfly.version}.zip"
+			 filesonly="false">
+			<zipfileset dir="${wildfly.home}/bin" filemode="755"
+						prefix="restcomm-sip-servlets-${mss.release.version}-wildfly-${wildfly.version}/bin">
+				<include name="*.sh"/>
+			</zipfileset>
+			<zipfileset dir="${wildfly.home}/bin"
+						prefix="restcomm-sip-servlets-${mss.release.version}-wildfly-${wildfly.version}/bin">
+				<exclude name="*.sh"/>
+			</zipfileset>
+			<zipfileset dir="${wildfly.home}"
+						prefix="restcomm-sip-servlets-${mss.release.version}-wildfly-${wildfly.version}"
+						excludes="**/bin/**"/>
+		</zip>
+	</target>
+
+	<target name="set-time-stamp" unless="skip.timestamp">
+		<tstamp>
+			<format property="time.stamp" pattern="yyMMddHHmm"/>
+		</tstamp>
+	</target>
+
+
+	<target name="clean">
+		<delete dir="${release.path}/wildfly-${wildfly.version}"/>
+	</target>
+
+	<target name="extract-wildfly" depends="download-wildfly">
+		<delete dir="${wildfly.home}" failonerror="true"/>
+		<unzip src="${wildfly.distro.zip.path}" dest="${wildfly.home}/.."/>
+	</target>
+
+	<available file="${mms.zip.path}" property="got.mms"/>
+	<target name="get-mms" unless="got.mms">
+		<echo>Downloading Restcomm Media Server ${mms-version}</echo>
+		<get dest="${mms.zip.path}" src="${mms.download.url}"/>
+	</target>
+
+	<target name="extract-mms" depends="get-mms">
+		<mkdir dir="${wildfly.home}/mobicents-media-server"/>
+		<unzip src="${mms.zip.path}" dest="${wildfly.home}/mobicents-media-server"/>
+	</target>
+
+	<target name="get-sasl">
+		<mkdir dir="${wildfly.home}/modules/system/layers/base/org/jboss/sasl/main"/>
+		<get src="https://repo1.maven.org/maven2/org/jboss/sasl/jboss-sasl/1.0.3.Final/jboss-sasl-1.0.3.Final.jar"
+			 dest="${wildfly.home}/modules/system/layers/base/org/jboss/sasl/main/jboss-sasl-1.0.3.Final.jar"/>
+		<echo file="${wildfly.home}/modules/system/layers/base/org/jboss/sasl/main/module.xml">
+			<![CDATA[<module xmlns="urn:jboss:module:1.1" name="org.jboss.sasl">
+    <resources>
+        <resource-root path="jboss-sasl-1.0.3.Final.jar"/>
+        <!-- Insert resources here -->
+    </resources>
+    <dependencies>
+        <module name="javax.api"/>
+        <module name="org.jboss.logging" />
+    </dependencies>
+</module>]]>
+		</echo>
+	</target>
+
+	<target name="get-mysql-driver">
+		<mkdir dir="${wildfly.home}/modules/org/mysql/jdbc/main"/>
+		<get src="https://repo1.maven.org/maven2/mysql/mysql-connector-java/5.1.40/mysql-connector-java-5.1.40.jar"
+			 dest="${wildfly.home}/modules/org/mysql/jdbc/main/mysql-connector-java-5.1.40.jar"/>
+		<echo file="${wildfly.home}/modules/org/mysql/jdbc/main/module.xml">
+			<![CDATA[<module xmlns="urn:jboss:module:1.1" name="org.mysql.jdbc">
+        <resources>
+        <resource-root path="mysql-connector-java-5.1.40.jar"/>
+        </resources>
+        <dependencies>
+                <module name="javax.api"/>
+                <module name="javax.transaction.api"/>
+        </dependencies>
+</module>]]>
+		</echo>
+	</target>
+
+	<available file="${tomcat7.distro.zip.path}" property="got.tomcat7"/>
+	<target name="get-tomcat7" unless="got.tomcat7">
+		<echo>Downloading Apache Tomcat</echo>
+		<get dest="${tomcat7.distro.zip.path}" src="${tomcat7.download.url}"/>
+	</target>
+
+	<target name="extract-tomcat7" depends="get-tomcat7">
+		<delete dir="${tomcat7.home}" failonerror="true"/>
+		<unzip src="${tomcat7.distro.zip.path}" dest="${tomcat7.home}/.."/>
+	</target>
+
+	<available file="${tomcat8.distro.zip.path}" property="got.tomcat8"/>
+	<target name="get-tomcat8" unless="got.tomcat8">
+		<echo>Downloading Apache Tomcat 8</echo>
+		<get dest="${tomcat8.distro.zip.path}" src="${tomcat8.download.url}"/>
+	</target>
+
+	<target name="extract-tomcat8" depends="get-tomcat8">
+		<delete dir="${tomcat8.home}" failonerror="true"/>
+		<unzip src="${tomcat8.distro.zip.path}" dest="${tomcat8.home}/.."/>
+	</target>
+
+	<available file="${embjopr.distro.zip.path}" property="got.jopr"/>
+	<target name="get-embjopr" unless="got.jopr">
+		<echo>Downloading Embedded Jopr</echo>
+		<get dest="${embjopr.distro.zip.path}" src="${embjopr.download.url}"/>
+	</target>
+
+	<target name="extract-embjopr" depends="get-embjopr">
+		<delete dir="${embjopr.home}" failonerror="true"/>
+		<unzip src="${embjopr.distro.zip.path}" dest="${embjopr.home}/.."/>
+		<mkdir dir="${embjopr.home.contents}"/>
+		<unjar src="${embjopr.home}" dest="${embjopr.home.contents}"/>
+	</target>
+</project>

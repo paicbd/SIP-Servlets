@@ -1,0 +1,285 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.mobicents.servlet.sip.testsuite</groupId>
+		<artifactId>sip-servlets-test-suite-parent</artifactId>
+		<version>3.2.0-SNAPSHOT</version>
+	</parent>
+	<artifactId>sip-servlets-test-suite</artifactId>
+	<packaging>jar</packaging>
+	<name>Restcomm Sip Servlets Test Suite</name>
+	<dependencies>
+		<!-- testing dependency -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>1.8.5</version>
+			<scope>test</scope>
+		</dependency>	
+		
+		<dependency>
+			<groupId>org.mobicents.servlet.sip</groupId>
+			<artifactId>sip-servlets-spec</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mobicents.servlet.sip</groupId>
+			<artifactId>sip-servlets-core-api</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mobicents.servlet.sip.containers</groupId>
+			<artifactId>sip-servlets-catalina-7</artifactId>
+			<version>3.2.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mobicents.servlet.sip</groupId>
+			<artifactId>sip-servlets-impl</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mobicents.servlet.sip</groupId>
+			<artifactId>sip-servlets-application-router</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.mobicents.servlet.sip.containers</groupId>
+			<artifactId>sip-servlets-tomcat-7</artifactId>
+			<version>3.2.0-SNAPSHOT</version>
+		</dependency>
+		
+		<!-- j2ee dependencies -->
+		<dependency>
+			<groupId>geronimo-spec</groupId>
+			<artifactId>geronimo-spec-j2ee-jacc</artifactId>
+			<version>1.0-rc4</version>
+		</dependency>
+		
+		<!-- logging dependency -->
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>${log4j.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging-api</artifactId>
+			<version>${commons-logging.version}</version>
+			<scope>provided</scope>
+		</dependency>	
+
+		<!-- JAIN-SIP dependency for the shootist -->
+		<dependency>
+			<groupId>javax.sip</groupId>
+			<artifactId>jain-sip-api</artifactId>
+			<version>${jain-sip-api.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.sip</groupId>
+			<artifactId>jain-sip-ri</artifactId>
+			<version>${jain-sip-ri.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>concurrent</groupId>
+			<artifactId>concurrent</artifactId>
+			<version>${concurrent.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>dnsjava</groupId>
+			<artifactId>dnsjava</artifactId>
+			<version>${dnsjava.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>net.java.stun4j</groupId>
+			<artifactId>stun4j</artifactId>
+			<version>1.0.MOBICENTS</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- javax.mail deps for multipart support -->
+		<dependency>
+			<groupId>javax.activation</groupId>
+			<artifactId>activation</artifactId>
+			<version>1.1.1</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>mail</artifactId>
+			<version>${javax.mail.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		
+		<!-- Tomcat dependencies -->
+		<dependency>
+			<groupId>org.apache.tomcat</groupId>
+			<artifactId>tomcat-catalina</artifactId>
+			<version>${tomcat-7.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.tomcat</groupId>
+			<artifactId>tomcat-coyote</artifactId>
+			<version>${tomcat-7.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.tomcat</groupId>
+			<artifactId>tomcat-jasper</artifactId>
+			<version>${tomcat-7.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.tomcat</groupId>
+			<artifactId>tomcat-jsp-api</artifactId>
+			<version>${tomcat-7.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.5</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.cafesip.sipunit</groupId>
+			<artifactId>sipunit</artifactId>
+			<version>${sipunit.version}</version>
+			<optional>true</optional>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.mobicents.tools</groupId>
+			<artifactId>sip-balancer-jar</artifactId>
+			<version>${restcomm.balancer.version}</version>
+			<scope>provided</scope>
+		</dependency>
+		
+		<dependency>			
+			<groupId>org.mobicents.ha.javax.sip</groupId>
+			<artifactId>restcomm-jain-sip-ha-core</artifactId>
+			<version>${restcomm.jain.sip.ha.version}</version>				
+		</dependency>
+		
+		<dependency>			
+			<groupId>org.mobicents.javax.sip</groupId>
+			<artifactId>restcomm-jain-sip-ext</artifactId>
+			<version>${restcomm.jain.sip.ext.version}</version>				
+		</dependency>
+		
+        <dependency>
+            <groupId>nl.jqno.equalsverifier</groupId>
+            <artifactId>equalsverifier</artifactId>
+            <version>2.0.2</version>		    
+        </dependency>
+        
+        <dependency>
+            <groupId>com.bea.sipservlet.tck</groupId>
+            <artifactId>tck-approuter</artifactId>
+            <version>1.1</version>
+            <scope>test</scope>             
+        </dependency>                	
+    </dependencies>
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven-surefire-plugin.version}</version>
+                <configuration>	
+                    <!-- redirect stdout to prevent jenkins console to be big -->
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>                                    				
+                    <excludes>
+                        <exclude>**/TestSipListener.java</exclude>
+                        <!-- test failing after refactoring,pending review/techdebt -->
+                        <exclude>**/Shootme491Test.java</exclude>
+                        <exclude>**/ProxyAckTest.java</exclude>
+                    </excludes>                    
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <argLine>-Dorg.mobicents.testsuite.testhostaddr=${org.mobicents.testsuite.testhostaddr} -XX:MaxPermSize=256m -Xms256m -Xmx1024m</argLine>       				          				
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${maven-failsafe-plugin.version}</version>
+                <configuration>
+                    <!-- redirect stdout to prevent jenkins console to be big -->
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <excludes>
+                        <exclude>**/TestSipListener.java</exclude>
+                    </excludes>                       
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <rerunFailingTestsCount>2</rerunFailingTestsCount>
+                    <!-- take from env so we dont create OOM
+                    in local env make it as high as possible considering 1GB per
+                    fork
+                    <forkCount>5</forkCount>
+                    -->
+                    <reuseForks>false</reuseForks>
+                    <!-- There is lot of state saved at SipServletTestCase class level
+                    making the method parallel level risky. keep classes as the level of
+                    isolation. Do not allow classes with many test methods
+                    <parallel>classes</parallel>
+                    -->
+             
+                    <argLine>-Dorg.mobicents.testsuite.testhostaddr=${org.mobicents.testsuite.testhostaddr} -XX:MaxPermSize=256m -Xms256m -Xmx1024m</argLine>       				          				
+                </configuration>
+                <!--
+                <executions>
+                    <execution>
+                        <id>failsafe-integration-tests</id>
+                        <phase>integration-test</phase>
+                        <goals>
+                            <goal>integration-test</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>failsafe-verify</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>                    
+                </executions>
+                -->
+            </plugin>                        
+        </plugins>
+    </build>
+    <repositories>
+        <repository>
+            <id>equalsverifier-repository</id>
+            <url>http://equalsverifier.googlecode.com/svn/maven/</url>
+        </repository>
+    </repositories>
+</project>

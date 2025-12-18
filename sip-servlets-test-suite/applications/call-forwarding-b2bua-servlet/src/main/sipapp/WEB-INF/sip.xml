@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<sip-app>
+	<app-name>org.mobicents.servlet.sip.testsuite.CallForwardingB2BUAApplication</app-name>
+	<display-name>Call Forwarding B2BUA Sip Servlet</display-name>
+	<description>Call Forwarding B2BUA Sip Servlet</description>
+	
+	<servlet-selection>
+		<main-servlet>
+			CallForwardingB2BUASipServlet
+		</main-servlet>
+	</servlet-selection>
+	<context-param>
+                        <param-name>org.restcomm.servlets.sip.REQUEST_TERMINATED_REASON</param-name>
+                        <param-value>487 request terminated reason</param-value>
+        </context-param>
+	<servlet>
+		<servlet-name>CallForwardingB2BUASipServlet</servlet-name>
+		<display-name>CallForwardingB2BUASipServlet</display-name>
+		<description>Call Forwarding B2BUA Sip Servlet</description>
+		<servlet-class>
+			org.mobicents.servlet.sip.testsuite.b2bua.CallForwardingB2BUASipServlet
+		</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+    <context-param>
+        <param-name>org.restcomm.servlets.sip.OVERRIDE_SYSTEM_HEADER_MODIFICATION</param-name>
+        <param-value>Modifiable</param-value>
+    </context-param>           
+
+	<listener>
+		<listener-class>
+			org.mobicents.servlet.sip.testsuite.b2bua.CallForwardingB2BUASipServlet
+		</listener-class>
+	</listener>
+</sip-app>

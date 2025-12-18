@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<sip-app>
+	<app-name>org.mobicents.servlet.sip.testsuite.ShootistApplication</app-name>
+	<display-name>Shootist Sip Servlet</display-name>
+	<description>Shootist Sip Servlet</description>
+	
+	<!--main-servlet>
+		ShootistSipServlet
+	</main-servlet-->
+	<context-param>
+			<param-name>org.restcomm.servlets.sip.QUOTABLE_PARAMETER</param-name>
+			<param-value>qparam1,qparam3</param-value>
+	</context-param>
+	<servlet>
+		<servlet-name>ShootistSipServlet</servlet-name>
+		<display-name>ShootistSipServlet</display-name>
+		<description>Shootist SIP servlet</description>
+		<servlet-class>
+			org.mobicents.servlet.sip.testsuite.ShootistSipServlet
+		</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+
+	<listener>
+		<listener-class>
+			org.mobicents.servlet.sip.testsuite.ShootistSipServlet
+		</listener-class>
+	</listener>
+</sip-app>

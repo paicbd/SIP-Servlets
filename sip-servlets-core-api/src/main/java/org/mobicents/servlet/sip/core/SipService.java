@@ -1,0 +1,68 @@
+package org.mobicents.servlet.sip.core;
+
+import javax.sip.SipStack;
+
+import org.mobicents.ha.javax.sip.ReplicationStrategy;
+import org.mobicents.servlet.sip.SipConnector;
+import org.mobicents.servlet.sip.core.message.OutboundProxy;
+
+/**
+ * This extends the definition of Service from tomcat interface to SIP.
+ * A <strong>SipService</strong> is a group of one or more
+ * Sip <strong>Connectors</strong> that share a single <strong>Container</strong>
+ * to process their requests/responses.  This arrangement allows, for example,
+ * a non-secured and secured SIP connectors to share the same population of sip apps and allow
+ * for converged apps. The service is responsible for definig the sip application dispatcher
+ * that will dispatch sip messages to sip applications.
+ * <p>
+ * 
+ * @author Jean Deruelle
+ */
+public interface SipService {	
+	/**
+	 * Retrieve the sip application dispatcher associated with this service
+	 * @return the sip application dispatcher associated with this service
+	 */
+	public SipApplicationDispatcher getSipApplicationDispatcher();
+	/**
+	 * Set the sip application dispatcher associated with this service
+	 * @param sipApplicationDispatcher the sip application dispatcher associated with this service
+	 */
+	public void setSipApplicationDispatcher(SipApplicationDispatcher sipApplicationDispatcher);
+	/**
+	 * *Get the underlying SIP Stack handling the incoming and outgoing SIP Messages
+	 * @return the underlying SIP Stack handling the incoming and outgoing SIP Messages
+	 */
+	public SipStack getSipStack();
+	
+	public SipConnector findSipConnector(String outboundTransport);
+	
+	public boolean isHttpFollowsSip();
+	public String getJvmRoute();
+	public OutboundProxy getOutboundProxy();
+	public int getDispatcherThreadPoolSize();
+	public int getCanceledTimerTasksPurgePeriod();
+	public SipConnector[] findSipConnectors();
+	public boolean isDialogPendingRequestChecking();
+	public boolean isMd5ContactUserPart();
+	public ReplicationStrategy getReplicationStrategy();
+	public int getTagHashMaxLength();
+	public int getCallIdMaxLength();
+	public String getDnsResolverClass();
+	public int getDnsTimeout();
+	
+	public String getMobicentsSipServletMessageFactoryClassName();
+	public void setMobicentsSipServletMessageFactoryClassName(String mobicentsSipServletMessageFactoryClassName);
+
+	/**
+	 * Stop the Server GraceFully, ie the server will stop only when all applications
+	 * will have no outstanding SIP or HTTP Sessions
+	 * @param timeToWait - the container will wait for the time specified in this parameter before forcefully killing
+	 * the remaining sessions (HTTP and SIP) for each application deployed, if a negative value is provided the container 
+	 * will wait until there is no remaining Session before shutting down
+	 */
+	public void stopGracefully(long timeToWait);
+	
+	public String getProxyTimerServiceImplementationType();
+	public String getSasTimerServiceImplementationType();
+}
